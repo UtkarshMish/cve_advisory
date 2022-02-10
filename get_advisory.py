@@ -137,8 +137,12 @@ if __name__ == "__main__":
     cvrf_file = r"./cve_a.xml"
     outfile = f'./output_{date.today().isoformat().replace("-","_")}.json'
     # Details of cvrf are available at https://cve.mitre.org/cve/cvrf.html
+    last_modified_date: date = date.fromtimestamp(os.stat(cvrf_file).st_mtime)
+    is_file_exist = os.path.exists(cvrf_file)
+    if not is_file_exist or date.today() != last_modified_date:
+        if is_file_exist:
+            os.remove(is_file_exist)
 
-    if not (os.path.exists(cvrf_file)):
         print("please wait ... downloading latest cvrf data....")
         response = request.urlretrieve(
             "https://cve.mitre.org/data/downloads/allitems-cvrf.xml",
