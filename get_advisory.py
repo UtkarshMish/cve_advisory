@@ -121,7 +121,7 @@ def scan_cvrf(tree: ET.ElementTree, prev_date: date):
     return (total, cve_list)
 
 
-def preety_print_download(block_num: int, read_size: int, total_size: int):
+def pretty_print_download(block_num: int, read_size: int, total_size: int):
     total_downloaded = block_num * read_size / (1024 * 1024)
     total_mb = total_size / (1024 * 1024)
     bar = int(50 * total_downloaded / total_mb)
@@ -144,13 +144,13 @@ if __name__ == "__main__":
     )
     if not is_file_exist or date.today() != last_modified_date:
         if is_file_exist:
-            os.remove(is_file_exist)
+            os.remove(CVRF_FILENAME)
 
         print("please wait ... downloading latest cvrf data....")
         response = request.urlretrieve(
             "https://cve.mitre.org/data/downloads/allitems-cvrf.xml",
             filename=CVRF_FILENAME,
-            reporthook=preety_print_download,
+            reporthook=pretty_print_download,
         )
         print()
 
