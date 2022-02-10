@@ -13,7 +13,7 @@ BOLD = "\033[1m"
 
 @dataclass(init=True, match_args=True, order=True, frozen=True, repr=True, eq=True)
 class CVE:
-    count_value: int
+    id: int
     title: Optional[str]
     ordinal: Optional[str]
     published: Optional[str]
@@ -26,7 +26,7 @@ class CVE:
         self,
     ) -> Dict[
         Literal[
-            "count_value",
+            "id",
             "title",
             "ordinal",
             "published",
@@ -74,7 +74,7 @@ def scan_cvrf(tree: ET.ElementTree, prev_date: date):
 
                     cve_list.append(
                         CVE(
-                            modified_cve_counts + published_csv_counts,
+                            (modified_cve_counts + published_csv_counts),
                             title,
                             ordinal,
                             published,
@@ -98,7 +98,7 @@ def scan_cvrf(tree: ET.ElementTree, prev_date: date):
 
                     cve_list.append(
                         CVE(
-                            modified_cve_counts + published_csv_counts,
+                            (modified_cve_counts + published_csv_counts),
                             title,
                             ordinal,
                             modified,
@@ -117,8 +117,8 @@ def scan_cvrf(tree: ET.ElementTree, prev_date: date):
     print(f"{published_csv_counts} new CVEs were published since {prev_date}.")
     print(f"{modified_cve_counts} existing CVEs were modified since {prev_date}.")
     print("-" * 50)
-
-    return (modified_cve_counts + published_csv_counts, cve_list)
+    total = modified_cve_counts + published_csv_counts
+    return (total, cve_list)
 
 
 def preety_print_download(block_num: int, read_size: int, total_size: int):
@@ -134,11 +134,14 @@ if __name__ == "__main__":
     prev_date = date.today() - timedelta(days=1)
 
     # Downloads csrf_file from  https://cve.mitre.org/data/downloads/allitems-cvrf.xml
-    cvrf_file = r"./cve_a.xml"
-    outfile = f'./output_{date.today().isoformat().replace("-","_")}.json'
+    CVRF_FILENAME = r"./cve_response.xml"
+    OUTPUT_FILENAME = f'./{date.today().isoformat().replace("-","_")}.json'
+
     # Details of cvrf are available at https://cve.mitre.org/cve/cvrf.html
-    last_modified_date: date = date.fromtimestamp(os.stat(cvrf_file).st_mtime)
-    is_file_exist = os.path.exists(cvrf_file)
+    is_file_exist = os.path.exists(CVRF_FILENAME)
+    last_modified_date: Optional[date] = (
+        date.fromtimestamp(os.stat(CVRF_FILENAME).st_mtime) if is_file_exist else None
+    )
     if not is_file_exist or date.today() != last_modified_date:
         if is_file_exist:
             os.remove(is_file_exist)
@@ -146,14 +149,14 @@ if __name__ == "__main__":
         print("please wait ... downloading latest cvrf data....")
         response = request.urlretrieve(
             "https://cve.mitre.org/data/downloads/allitems-cvrf.xml",
-            filename=cvrf_file,
+            filename=CVRF_FILENAME,
             reporthook=preety_print_download,
         )
         print()
 
     print("Loading cvrf.xml...")
     startLoadTime = time.perf_counter()
-    tree = ET.parse(cvrf_file)
+    tree = ET.parse(CVRF_FILENAME)
     endLoadTime = time.perf_counter()
     print("Finished loading cvrf.xml.")
     total_count, cve_list = scan_cvrf(tree, prev_date)
@@ -161,7 +164,7 @@ if __name__ == "__main__":
     print("writing data in json file .... ")
     json.dump(
         {"cve": [cve.dict() for cve in cve_list], "total": total_count},
-        open(outfile, "w"),
+        open(OUTPUT_FILENAME, "w"),
         indent=4,
     )
-    print(f"completed -- filename: {outfile}")
+    print(f"completed -- filename: {OUTPUT_FILENAME}")
